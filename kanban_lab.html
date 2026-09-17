@@ -867,25 +867,10 @@ if (typeof grist !== 'undefined') {
   // Lecture directe des enregistrements par nom de colonne
   // Les colonnes Grist doivent s'appeler exactement :
   // Titre, Description, Ligne, Statut, Tags, Porteurs, Couleur
-  grist.ready({
-    requiredAccess: 'read table',
-    columns: [
-      { name: 'Titre',       title: 'Titre du projet',  type: 'Text',       optional: false },
-      { name: 'Description', title: 'Description',       type: 'Text',       optional: true  },
-      { name: 'Ligne',       title: 'Ligne de nage',     type: 'Choice',     optional: false },
-      { name: 'Statut',      title: 'Statut',            type: 'Choice',     optional: false },
-      { name: 'Tags',        title: 'Tags',              type: 'ChoiceList', optional: true  },
-      { name: 'Porteurs',    title: 'Porteurs',          type: 'ChoiceList', optional: true  },
-      { name: 'Couleur',     title: 'Couleur (hex)',     type: 'Text',       optional: true  },
-    ]
-  });
+  grist.ready({ requiredAccess: 'read table' });
 
-  grist.onRecords(function(records, mappings) {
-    const data = records.map(r => {
-      const mapped = mappings ? grist.mapColumnNames(r, mappings) : r;
-      return mapped ? normalize(mapped) : normalize(r);
-    });
-    renderAll(data);
+  grist.onRecords(function(records) {
+    renderAll(records.map(normalize));
   });
 
 } else {
