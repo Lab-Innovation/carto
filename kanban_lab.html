@@ -824,6 +824,34 @@ function hexTint(hex, pct) {
   return `rgba(${r},${g},${b},${pct})`;
 }
 
+// Lecture d'un champ insensible à la casse
+// Grist peut envoyer "ligne" ou "Ligne" ou "LIGNE" selon l'ID de colonne
+function getField(record, name) {
+  if (record[name] !== undefined) return record[name];
+  const lower = name.toLowerCase();
+  for (const key of Object.keys(record)) {
+    if (key.toLowerCase() === lower) return record[key];
+  }
+  return undefined;
+}
+
+// Normalise un enregistrement Grist vers les noms attendus
+// IDs réels dans Grist : Etape, statut, Tag, Porteur, Titre, Description
+function normalize(r) {
+  return {
+    Titre:       getField(r, 'Titre')       || getField(r, 'titre')       || '',
+    Description: getField(r, 'Description') || getField(r, 'description') || '',
+    Ligne:       getField(r, 'Ligne')       || getField(r, 'ligne')
+                 || getField(r, 'Etape')    || getField(r, 'etape')       || '',
+    Statut:      getField(r, 'Statut')      || getField(r, 'statut')      || '',
+    Tags:        getField(r, 'Tags')        || getField(r, 'tags')
+                 || getField(r, 'Tag')      || getField(r, 'tag')         || '',
+    Porteurs:    getField(r, 'Porteurs')    || getField(r, 'porteurs')
+                 || getField(r, 'Porteur')  || getField(r, 'porteur')     || '',
+    Couleur:     getField(r, 'Couleur')     || getField(r, 'couleur')     || '',
+  };
+}
+
 /* ═══════════════════════════════════════════════════════════
    Point d'entrée — Grist ou mode démo
 ═══════════════════════════════════════════════════════════ */
@@ -839,10 +867,25 @@ if (typeof grist !== 'undefined') {
   // Lecture directe des enregistrements par nom de colonne
   // Les colonnes Grist doivent s'appeler exactement :
   // Titre, Description, Ligne, Statut, Tags, Porteurs, Couleur
-  grist.ready({ requiredAccess: 'read table' });
+  grist.ready({
+    requiredAccess: 'read table',
+    columns: [
+      { name: 'Titre',       title: 'Titre du projet',  type: 'Text',       optional: false },
+      { name: 'Description', title: 'Description',       type: 'Text',       optional: true  },
+      { name: 'Ligne',       title: 'Ligne de nage',     type: 'Choice',     optional: false },
+      { name: 'Statut',      title: 'Statut',            type: 'Choice',     optional: false },
+      { name: 'Tags',        title: 'Tags',              type: 'ChoiceList', optional: true  },
+      { name: 'Porteurs',    title: 'Porteurs',          type: 'ChoiceList', optional: true  },
+      { name: 'Couleur',     title: 'Couleur (hex)',     type: 'Text',       optional: true  },
+    ]
+  });
 
-  grist.onRecords(function(records) {
-    renderAll(records);
+  grist.onRecords(function(records, mappings) {
+    const data = records.map(r => {
+      const mapped = mappings ? grist.mapColumnNames(r, mappings) : r;
+      return mapped ? normalize(mapped) : normalize(r);
+    });
+    renderAll(data);
   });
 
 } else {
