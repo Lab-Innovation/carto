@@ -9,9 +9,9 @@
 
 /* ── Tokens ─────────────────────────────────────────────── */
 :root {
-  --col-w: 196px;
-  --lane-w: 108px;
-  --header-h: 42px;
+  --col-w: 160px;
+  --lane-w: 130px;
+  --header-h: 50px;
   --bar-h: 46px;
 
   --navy:       #1B2A4A;
@@ -36,8 +36,8 @@
   /* Status accents */
   --s-backlog:  #94A3B8;
   --s-afaire:   #3B82F6;
-  --s-encours:  #10B981;
-  --s-pause:    #F59E0B;
+  --s-encours:  #F97316;
+  --s-pause:    #EC4899;
   --s-termine:  #84CC16;
   --s-ecarte:   #EF4444;
 
@@ -123,8 +123,9 @@ body {
 
 /* ── Board grid ──────────────────────────────────────────── */
 .board {
-  display: inline-grid;
-  grid-template-columns: var(--lane-w) repeat(6, var(--col-w));
+  display: grid;
+  grid-template-columns: var(--lane-w) repeat(6, minmax(var(--col-w), 1fr));
+  width: 100%;
   min-width: calc(var(--lane-w) + 6 * var(--col-w));
 }
 
@@ -146,63 +147,72 @@ body {
   height: var(--header-h);
   background: var(--navy-mid);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 8px;
   border-right: 1px solid rgba(255,255,255,.05);
-  border-bottom: 3px solid var(--border);
+  border-bottom: 4px solid var(--border);
 }
 .col-hd-name {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: #C4D5E8;
+  text-align: center;
+  letter-spacing: .01em;
 }
 .col-hd-count {
   font-size: 10px;
   color: #3D5070;
-  font-weight: 500;
-  background: rgba(0,0,0,.15);
-  border-radius: 2px;
-  padding: 0 4px;
-  min-width: 14px;
+  font-weight: 600;
+  background: rgba(0,0,0,.2);
+  border-radius: 8px;
+  padding: 0 6px;
+  min-width: 16px;
   text-align: center;
 }
 
-/* Status accent strip at bottom of header */
+/* Texte de l'en-tête dans la couleur du statut */
 .col-hd[data-s="Backlog"]  { border-bottom-color: var(--s-backlog); }
+.col-hd[data-s="Backlog"]  .col-hd-name { color: var(--s-backlog); }
 .col-hd[data-s="À faire"]  { border-bottom-color: var(--s-afaire); }
+.col-hd[data-s="À faire"]  .col-hd-name { color: var(--s-afaire); }
 .col-hd[data-s="En cours"] { border-bottom-color: var(--s-encours); }
+.col-hd[data-s="En cours"] .col-hd-name { color: var(--s-encours); }
 .col-hd[data-s="En pause"] { border-bottom-color: var(--s-pause); }
+.col-hd[data-s="En pause"] .col-hd-name { color: var(--s-pause); }
 .col-hd[data-s="Terminé"]  { border-bottom-color: var(--s-termine); }
+.col-hd[data-s="Terminé"]  .col-hd-name { color: var(--s-termine); }
 .col-hd[data-s="Écarté"]   { border-bottom-color: var(--s-ecarte); }
+.col-hd[data-s="Écarté"]   .col-hd-name { color: var(--s-ecarte); }
 
 /* ── Lane labels ─────────────────────────────────────────── */
 .lane-label {
   position: sticky;
   left: 0;
   z-index: 5;
-  background: var(--navy-mid);
-  border-right: 1px solid rgba(255,255,255,.06);
-  border-bottom: 1px solid rgba(255,255,255,.04);
   display: flex;
   align-items: center;
   justify-content: center;
-  writing-mode: vertical-lr;
-  transform: rotate(180deg);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: .1em;
-  color: #C4D5E8;
-  padding: 14px 0;
-  min-height: 140px;
-  position: sticky; /* restate for grid */
-  border-left: 3px solid transparent;
+  letter-spacing: .04em;
+  text-align: center;
+  word-break: break-word;
+  padding: 0 10px;
+  min-height: 120px;
+  border-right: 3px solid rgba(0,0,0,.1);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  /* couleurs overridées par ligne */
+  background: #E2E8F0;
+  color: #475569;
 }
 
-.lane-label[data-l="R&D"]               { border-right-color: var(--rd);  }
-.lane-label[data-l="POC"]               { border-right-color: var(--poc); }
-.lane-label[data-l="Pilote"]            { border-right-color: var(--pil); }
-.lane-label[data-l="Industrialisation"] { border-right-color: var(--ind); }
+.lane-label[data-l="R&D"]               { background: #E5C5E2; color: #8D3F86; border-right-color: #8D3F86; }
+.lane-label[data-l="POC"]               { background: #C6DCEB; color: #2D6A98; border-right-color: #2D6A98; }
+.lane-label[data-l="Pilote"]            { background: #EDE7C2; color: #7A6422; border-right-color: #7A6422; }
+.lane-label[data-l="Industrialisation"] { background: #BFE0D9; color: #1D6E62; border-right-color: #1D6E62; font-size: 10px; }
 
 /* ── Lane cells ──────────────────────────────────────────── */
 .cell {
@@ -826,30 +836,13 @@ if (typeof grist !== 'undefined') {
   modeEl.className = 'bar-mode connected';
   modeEl.textContent = 'Grist connecté';
 
-  grist.ready({
-    requiredAccess: 'read table',
-    columns: [
-      { name: 'Titre',       title: 'Titre du projet',   type: 'Text',       optional: false },
-      { name: 'Description', title: 'Description',        type: 'Text',       optional: true  },
-      { name: 'Ligne',       title: 'Ligne de nage',      type: 'Choice',     optional: false },
-      { name: 'Statut',      title: 'Statut',             type: 'Choice',     optional: false },
-      { name: 'Tags',        title: 'Tags',               type: 'ChoiceList', optional: true  },
-      { name: 'Porteurs',    title: 'Porteurs',           type: 'ChoiceList', optional: true  },
-      { name: 'Couleur',     title: 'Couleur (hex)',      type: 'Text',       optional: true  },
-    ]
-  });
+  // Lecture directe des enregistrements par nom de colonne
+  // Les colonnes Grist doivent s'appeler exactement :
+  // Titre, Description, Ligne, Statut, Tags, Porteurs, Couleur
+  grist.ready({ requiredAccess: 'read table' });
 
-  grist.onRecords(function(records, mappings) {
-    let data;
-    try {
-      // Utilise le mapping si disponible (colonnes renommées côté Grist)
-      data = mappings
-        ? records.map(r => grist.mapColumnNames(r, mappings)).filter(Boolean)
-        : records;
-    } catch(e) {
-      data = records;
-    }
-    renderAll(data);
+  grist.onRecords(function(records) {
+    renderAll(records);
   });
 
 } else {
