@@ -178,10 +178,10 @@ body {
 .card {
   position: absolute;
   height: var(--card-h);
-  background: var(--surface);
+  background: #FFFFFF;
   border-radius: var(--radius);
   border-left: 3px solid #818CF8;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 3px rgba(15,25,45,.12), 0 2px 8px rgba(15,25,45,.08);
   cursor: pointer;
   overflow: hidden;
   transition: box-shadow .12s ease, transform .1s ease;
@@ -441,13 +441,14 @@ const MONTH_DATES = MONTHS.map((_, i) => {
   return d;
 });
 
-const LIGNES  = ['R&D', 'POC', 'Pilote', 'Industrialisation'];
+const LIGNES  = ['R&D', 'POC', 'Pilote', 'Production'];
 
 const LANE_STYLE = {
-  'R&D':              { bg: '#E5C5E2', text: '#8D3F86' },
-  'POC':              { bg: '#C6DCEB', text: '#2D6A98' },
-  'Pilote':           { bg: '#EDE7C2', text: '#7A6422' },
-  'Industrialisation':{ bg: '#BFE0D9', text: '#1D6E62' },
+  'R&D':           { bg: '#E5C5E2', text: '#8D3F86' },
+  'POC':           { bg: '#C6DCEB', text: '#2D6A98' },
+  'Pilote':        { bg: '#EDE7C2', text: '#7A6422' },
+  'Production': { bg: '#BFE0D9', text: '#1D6E62' },
+  'Industrialisation': { bg: '#BFE0D9', text: '#1D6E62' }, // rétrocompat
 };
 const LANE_DEFAULT = { bg: '#E2E8F0', text: '#475569' };
 
@@ -506,7 +507,7 @@ function normalize(r) {
     Titre:       str(getField(r,'Titre')       || getField(r,'titre')      || ''),
     Description: str(getField(r,'Description') || getField(r,'description')|| ''),
     Ligne:       str(getField(r,'Ligne')       || getField(r,'ligne')
-                  || getField(r,'Etape')       || getField(r,'etape')      || ''),
+                  || getField(r,'Etape')       || getField(r,'etape')      || '').replace('Industrialisation','Production'),
     Statut:      str(getField(r,'Statut')      || getField(r,'statut')     || ''),
     Tags:        getField(r,'Tags')   || getField(r,'tags')   || getField(r,'Tag') || getField(r,'tag') || '',
     Porteurs:    getField(r,'Porteurs')|| getField(r,'porteurs')|| getField(r,'Porteur')|| getField(r,'porteur')|| '',
@@ -606,8 +607,9 @@ function render(records) {
     hdr.appendChild(line);
     section.appendChild(hdr);
 
-    // Zone de cards
+    // Zone de cards avec fond légèrement teinté par la couleur de la lane
     const area = el('div','cards-area');
+    area.style.backgroundColor = hexTint(ls.bg, 0.22);
 
     if (cards.length === 0) {
       const empty = el('div','lane-empty');
@@ -659,7 +661,7 @@ function render(records) {
       card.style.width           = widthPct + '%';
       card.style.top             = top + 'px';
       card.style.borderLeftColor = color;
-      card.style.backgroundColor = hexTint(color, .05);
+      // fond blanc pur — contraste assuré par le fond teinté de la lane
 
       // Estimer la largeur px pour adapter le contenu
       // (approximation basée sur % × largeur viewport)
