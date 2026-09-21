@@ -156,6 +156,7 @@ body {
 .lane-header[data-l="R&D"]               { background: #F5EEF4; color: #8D3F86; }
 .lane-header[data-l="POC"]               { background: #EDF3F8; color: #2D6A98; }
 .lane-header[data-l="Pilote"]            { background: #F7F5EA; color: #7A6422; }
+.lane-header[data-l="Production"]        { background: #ECF5F3; color: #1D6E62; }
 .lane-header[data-l="Industrialisé"]     { background: #ECF5F3; color: #1D6E62; }
 .lane-header[data-l="Industrialisation"] { background: #ECF5F3; color: #1D6E62; }
 
@@ -323,12 +324,15 @@ body {
   white-space: nowrap;
 }
 
-/* Narrow cards — hide secondary content */
-.card.narrow .card-desc  { display: none; }
-.card.narrow .card-row3  { display: none; }
+/* Narrow cards — masquer description/tags, GARDER titre + statut + porteurs */
+.card.narrow .card-row2  { display: none; }
+/* Tiny cards — masquer aussi les dates dans row3 */
 .card.tiny   .card-row2  { display: none; }
-.card.tiny   .card-row3  { display: none; }
-.card.tiny   .card-statut { display: none; }
+.card.tiny   .card-dates { display: none; }
+/* Micro cards (< 50px) — juste le titre tronqué */
+.card.micro  .card-row2  { display: none; }
+.card.micro  .card-row3  { display: none; }
+.card.micro  .card-statut { display: none; }
 
 /* ── Empty lane ──────────────────────────────────────────── */
 .lane-empty {
@@ -480,14 +484,15 @@ const MONTH_DATES = MONTHS.map((_, i) => {
   return d;
 });
 
-const LIGNES  = ['R&D', 'POC', 'Pilote', 'Industrialisé'];
+const LIGNES  = ['R&D', 'POC', 'Pilote', 'Production'];
 
 const LANE_STYLE = {
-  'R&D':           { bg: '#E5C5E2', text: '#8D3F86' },
-  'POC':           { bg: '#C6DCEB', text: '#2D6A98' },
-  'Pilote':        { bg: '#EDE7C2', text: '#7A6422' },
-  'Industrialisé': { bg: '#BFE0D9', text: '#1D6E62' },
-  'Industrialisation': { bg: '#BFE0D9', text: '#1D6E62' }, // rétrocompat
+  'R&D':              { bg: '#E5C5E2', text: '#8D3F86' },
+  'POC':              { bg: '#C6DCEB', text: '#2D6A98' },
+  'Pilote':           { bg: '#EDE7C2', text: '#7A6422' },
+  'Production':       { bg: '#BFE0D9', text: '#1D6E62' },
+  'Industrialisé':    { bg: '#BFE0D9', text: '#1D6E62' }, // rétrocompat
+  'Industrialisation':{ bg: '#BFE0D9', text: '#1D6E62' }, // rétrocompat
 };
 const LANE_DEFAULT = { bg: '#E2E8F0', text: '#475569' };
 
@@ -545,8 +550,10 @@ function normalize(r) {
   return {
     Titre:       str(getField(r,'Titre')       || getField(r,'titre')      || ''),
     Description: str(getField(r,'Description') || getField(r,'description')|| ''),
-    Ligne:       str(getField(r,'Ligne')       || getField(r,'ligne')
-                  || getField(r,'Etape')       || getField(r,'etape')      || '').replace('Industrialisation','Industrialisé'),
+    Ligne: str(getField(r,'Ligne')  || getField(r,'ligne')
+            || getField(r,'Etape') || getField(r,'etape') || '')
+           .replace('Industrialisation','Production')
+           .replace('Industrialisé','Production'),
     Statut:      str(getField(r,'Statut')      || getField(r,'statut')     || ''),
     Tags:        getField(r,'Tags')   || getField(r,'tags')   || getField(r,'Tag') || getField(r,'tag') || '',
     Porteurs:    getField(r,'Porteurs')|| getField(r,'porteurs')|| getField(r,'Porteur')|| getField(r,'porteur')|| '',
@@ -716,8 +723,9 @@ function render(records) {
       card.style.borderTopColor = color;
 
       const approxW = (widthPct / 100) * (window.innerWidth || 1000);
-      if (approxW < 80)  card.classList.add('tiny');
-      else if (approxW < 160) card.classList.add('narrow');
+      if (approxW < 50)       card.classList.add('micro');
+      else if (approxW < 120) card.classList.add('tiny');
+      else if (approxW < 220) card.classList.add('narrow');
 
       // ── Bandeau "En pause" ──
       if (isPause) {
@@ -743,7 +751,7 @@ function render(records) {
       // ── Corps de la card ──
       const body = el('div','card-body');
 
-      // Row 1: titre + pastille ligne (pas de badge statut pour les pauses)
+      // Row 1: titre + badge statut (pas de pastille lane, redondant dans roadmap)
       const row1 = el('div','card-row1');
       const title = el('div','card-title');
       title.textContent = r.Titre || '(Sans titre)';
@@ -753,12 +761,6 @@ function render(records) {
         st.textContent = r.Statut;
         row1.appendChild(st);
       }
-      const pill = el('span','card-statut');
-      pill.style.background = lStyle.bg;
-      pill.style.color      = lStyle.text;
-      pill.style.opacity    = isPause ? '.5' : '1';
-      pill.textContent      = r.Ligne;
-      row1.appendChild(pill);
       body.appendChild(row1);
 
       // Row 2: description + tags
