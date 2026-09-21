@@ -473,10 +473,16 @@ function tagColor(t) { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 37
 function hexTint(hex, a) { const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); if (!m) return `rgba(99,102,241,${a})`; return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${a})`; }
 
 function parseDate(s) {
-  if (!s) return null;
-  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!s && s !== 0) return null;
+  // Grist type Date envoie un timestamp en secondes (pas millisecondes)
+  if (typeof s === 'number') return new Date(s * 1000);
+  const str = String(s).trim();
+  if (!str) return null;
+  // YYYY-MM-DD
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(str);
   if (m) return new Date(+m[1], +m[2]-1, +m[3]);
-  m = /^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/.exec(s);
+  // DD/MM/YYYY ou DD-MM-YYYY
+  m = /^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/.exec(str);
   if (m) return new Date(+m[3], +m[2]-1, +m[1]);
   return null;
 }
@@ -505,8 +511,15 @@ function normalize(r) {
     Tags:        getField(r,'Tags')   || getField(r,'tags')   || getField(r,'Tag') || getField(r,'tag') || '',
     Porteurs:    getField(r,'Porteurs')|| getField(r,'porteurs')|| getField(r,'Porteur')|| getField(r,'porteur')|| '',
     Couleur:     str(getField(r,'Couleur')     || getField(r,'couleur')    || ''),
-    Date_debut:  str(getField(r,'Date_debut')  || getField(r,'date_debut') || getField(r,'Debut') || getField(r,'debut') || ''),
-    Date_fin:    str(getField(r,'Date_fin')    || getField(r,'date_fin')   || getField(r,'Fin')   || getField(r,'fin')   || ''),
+    Date_debut:  getField(r,'Date_debut')     || getField(r,'date_debut')
+              || getField(r,'Date de début')  || getField(r,'date de début')
+              || getField(r,'Date_de_début')  || getField(r,'date_de_debut')
+              || getField(r,'Date_de_debut')  || getField(r,'date_de_d_but')
+              || getField(r,'Debut')          || getField(r,'debut')          || null,
+    Date_fin:   getField(r,'Date_fin')        || getField(r,'date_fin')
+              || getField(r,'Date de fin')    || getField(r,'date de fin')
+              || getField(r,'Date_de_fin')    || getField(r,'date_de_fin')
+              || getField(r,'Fin')            || getField(r,'fin')            || null,
   };
 }
 
