@@ -81,6 +81,7 @@ body {
   background: var(--navy-mid);
   border-bottom: 2px solid var(--navy);
   display: grid;
+  /* grid-template-columns surchargé dynamiquement par JS */
   grid-template-columns: repeat(12, 1fr);
   height: var(--head-h);
 }
@@ -772,11 +773,13 @@ function render(records) {
 
   // ── En-tête des mois (sticky) ──
   const head = el('div','tl-head');
+  head.style.gridTemplateColumns = `repeat(${MONTHS.length}, 1fr)`;
   const today = new Date();
   MONTHS.forEach((label, i) => {
     const c = el('div','month-cell');
     const mDate = MONTH_DATES[i];
-    if (today >= mDate && (i === 11 || today < MONTH_DATES[i+1])) c.classList.add('current');
+    const nextDate = MONTH_DATES[i+1] || TEND;
+    if (today >= mDate && today < nextDate) c.classList.add('current');
     c.textContent = label;
     head.appendChild(c);
   });
@@ -831,10 +834,11 @@ function render(records) {
       return;
     }
 
-    // Gridlines verticales (1 par mois + fin)
-    for (let i = 0; i <= 12; i++) {
+    // Gridlines verticales — 1 par mois, dynamique selon la période
+    const n = MONTHS.length;
+    for (let i = 0; i <= n; i++) {
       const gl = el('div','gridline');
-      gl.style.left = (i / 12 * 100) + '%';
+      gl.style.left = (i / n * 100) + '%';
       area.appendChild(gl);
     }
 
