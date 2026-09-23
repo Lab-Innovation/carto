@@ -407,6 +407,56 @@ body {
   z-index: 50; pointer-events: none; white-space: nowrap;
 }
 
+/* ── Barre de contrôle période ───────────────────────────── */
+.ctrl-bar {
+  height: 36px;
+  background: #162236;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.ctrl-label {
+  font-size: 11px;
+  color: #7A90AA;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ctrl-sep { font-size: 11px; color: #3D5070; }
+.ctrl-bar input[type="month"] {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 4px;
+  color: #C4D5E8;
+  font-size: 11px;
+  font-family: inherit;
+  padding: 3px 8px;
+  height: 24px;
+  cursor: pointer;
+  outline: none;
+}
+.ctrl-bar input[type="month"]:hover { border-color: rgba(255,255,255,.2); }
+.ctrl-bar input[type="month"]:focus { border-color: #3B82F6; }
+.ctrl-reset {
+  background: none;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 4px;
+  color: #7A90AA;
+  font-size: 10px;
+  font-family: inherit;
+  padding: 2px 8px;
+  cursor: pointer;
+  height: 24px;
+}
+.ctrl-reset:hover { border-color: rgba(255,255,255,.2); color: #C4D5E8; }
+.ctrl-info {
+  margin-left: auto;
+  font-size: 10px;
+  color: #3D5070;
+}
+
 </style>
 </head>
 <body>
@@ -414,10 +464,19 @@ body {
 <div class="bar">
   <span class="bar-title">Roadmap Projets · Lab Innovation</span>
   <span class="bar-dot"></span>
-  <span class="bar-sub">Sep 2026 – Aoû 2027</span>
+  <span class="bar-sub" id="bar-period">—</span>
   <span class="bar-dot"></span>
   <span class="bar-sub" id="bar-count">—</span>
   <span class="bar-mode" id="bar-mode">Chargement…</span>
+</div>
+
+<div class="ctrl-bar">
+  <span class="ctrl-label">Période</span>
+  <input type="month" id="ctrl-start" value="2026-09" title="Début de la timeline">
+  <span class="ctrl-sep">→</span>
+  <input type="month" id="ctrl-end" value="2027-08" title="Fin de la timeline">
+  <button class="ctrl-reset" onclick="resetPeriod()">Réinitialiser</button>
+  <span class="ctrl-info" id="ctrl-info"></span>
 </div>
 
 <div class="scroll" id="scroll">
@@ -438,6 +497,10 @@ body {
     <button class="close" onclick="closePanel()">✕</button>
   </div>
   <div class="panel-body">
+    <div id="p-cause-wrap" style="display:none;">
+      <div class="section-lbl">Cause de la pause</div>
+      <div style="background:#FEF2F2;border-left:3px solid #FC8171;border-radius:4px;padding:8px 10px;font-size:12px;color:#7F1D1D;line-height:1.5;" id="p-cause"></div>
+    </div>
     <div id="p-dates-wrap">
       <div class="section-lbl">Calendrier</div>
       <div class="panel-dates">
@@ -470,20 +533,70 @@ body {
 /* ═══════════════════════════════════════════════════
    Configuration timeline
 ═══════════════════════════════════════════════════ */
-const TSTART = new Date(2026, 8, 1);   // 1er Sep 2026
-const TEND   = new Date(2027, 8, 1);   // 1er Sep 2027 (exclu)
-const TSPAN  = TEND - TSTART;
+const FR_MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const DEFAULT_START = '2026-09';
+const DEFAULT_END   = '2027-08';
 
-const MONTHS = [
-  'Sep 26','Oct 26','Nov 26','Déc 26',
-  'Jan 27','Fév 27','Mar 27','Avr 27',
-  'Mai 27','Jun 27','Jul 27','Aoû 27'
-];
-const MONTH_DATES = MONTHS.map((_, i) => {
-  const d = new Date(TSTART);
-  d.setMonth(d.getMonth() + i);
-  return d;
+let TSTART, TEND, TSPAN, MONTHS, MONTH_DATES;
+
+function parsePeriod(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m - 1, 1);
+}
+
+function buildTimeline(startYM, endYM) {
+  TSTART = parsePeriod(startYM);
+  // TEND = premier jour du mois SUIVANT le mois de fin
+  const [ey, em] = endYM.split('-').map(Number);
+  TEND   = new Date(ey, em, 1);
+  TSPAN  = TEND - TSTART;
+
+  MONTHS = []; MONTH_DATES = [];
+  let cur = new Date(TSTART);
+  while (cur < TEND) {
+    MONTHS.push(FR_MONTHS[cur.getMonth()] + ' ' + String(cur.getFullYear()).slice(2));
+    MONTH_DATES.push(new Date(cur));
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+  // Topbar période
+  const s = FR_MONTHS[TSTART.getMonth()] + ' ' + TSTART.getFullYear();
+  const e = FR_MONTHS[new Date(TEND.getFullYear(), TEND.getMonth()-1, 1).getMonth()] + ' ' + new Date(TEND.getFullYear(), TEND.getMonth()-1, 1).getFullYear();
+  document.getElementById('bar-period').textContent = s + ' – ' + e;
+  // Info nb mois
+  document.getElementById('ctrl-info').textContent = MONTHS.length + ' mois';
+}
+
+function loadPeriod() {
+  let s = DEFAULT_START, e = DEFAULT_END;
+  try { s = localStorage.getItem('roadmap_start') || DEFAULT_START; } catch(_) {}
+  try { e = localStorage.getItem('roadmap_end')   || DEFAULT_END;   } catch(_) {}
+  document.getElementById('ctrl-start').value = s;
+  document.getElementById('ctrl-end').value   = e;
+  buildTimeline(s, e);
+}
+
+function savePeriod(s, e) {
+  try { localStorage.setItem('roadmap_start', s); localStorage.setItem('roadmap_end', e); } catch(_) {}
+}
+
+function resetPeriod() {
+  document.getElementById('ctrl-start').value = DEFAULT_START;
+  document.getElementById('ctrl-end').value   = DEFAULT_END;
+  buildTimeline(DEFAULT_START, DEFAULT_END);
+  savePeriod(DEFAULT_START, DEFAULT_END);
+  if (lastRecords) render(lastRecords);
+}
+
+document.getElementById('ctrl-start').addEventListener('change', function() {
+  const s = this.value, e = document.getElementById('ctrl-end').value;
+  if (s && e && s <= e) { buildTimeline(s, e); savePeriod(s, e); if (lastRecords) render(lastRecords); }
 });
+document.getElementById('ctrl-end').addEventListener('change', function() {
+  const s = document.getElementById('ctrl-start').value, e = this.value;
+  if (s && e && s <= e) { buildTimeline(s, e); savePeriod(s, e); if (lastRecords) render(lastRecords); }
+});
+
+let lastRecords = null;
 
 const LIGNES  = ['R&D', 'POC', 'Pilote', 'Production'];
 
@@ -608,6 +721,7 @@ function statutClass(s) {
    Rendu principal
 ═══════════════════════════════════════════════════ */
 function render(records) {
+  lastRecords = records;
   const tl = document.getElementById('timeline');
   tl.innerHTML = '';
 
@@ -848,6 +962,16 @@ function openPanel(r, color) {
     badges.appendChild(b);
   }
 
+  // Cause pause (visible seulement si En pause + cause renseignée)
+  const causeWrap = document.getElementById('p-cause-wrap');
+  const causeEl   = document.getElementById('p-cause');
+  if (r.Statut === 'En pause' && r.Cause_pause) {
+    causeEl.textContent = r.Cause_pause;
+    causeWrap.style.display = '';
+  } else {
+    causeWrap.style.display = 'none';
+  }
+
   // Dates
   document.getElementById('p-debut').textContent = fmtDate(r._debut || parseDate(r.Date_debut));
   document.getElementById('p-fin').textContent   = fmtDate(r._fin   || parseDate(r.Date_fin));
@@ -893,6 +1017,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel()
    Grist
 ═══════════════════════════════════════════════════ */
 const modeEl = document.getElementById('bar-mode');
+
+loadPeriod();
 
 if (typeof grist !== 'undefined') {
   modeEl.className = 'bar-mode connected';
