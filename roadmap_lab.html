@@ -60,7 +60,7 @@ body {
   gap: 10px;
   flex-shrink: 0;
 }
-.bar-title { font-size: 12px; font-weight: 700; color: #D6E1F0; letter-spacing: .02em; }
+.bar-title { font-size: 15px; font-weight: 700; color: #D6E1F0; letter-spacing: .01em; }
 .bar-dot   { width: 3px; height: 3px; border-radius: 50%; background: #3D5070; }
 .bar-sub   { font-size: 11px; color: #7A90AA; }
 .bar-mode  { margin-left: auto; font-size: 10px; padding: 2px 8px; border-radius: 3px; font-weight: 600; letter-spacing: .03em; }
@@ -409,52 +409,55 @@ body {
 
 /* ── Barre de contrôle période ───────────────────────────── */
 .ctrl-bar {
-  height: 36px;
-  background: #162236;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  height: 40px;
+  background: #E8EDF3;
+  border-bottom: 1px solid #C8D4E0;
   display: flex;
   align-items: center;
   padding: 0 14px;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 .ctrl-label {
-  font-size: 11px;
-  color: #7A90AA;
-  font-weight: 500;
+  font-size: 12px;
+  color: #2D3F55;
+  font-weight: 700;
   white-space: nowrap;
 }
-.ctrl-sep { font-size: 11px; color: #3D5070; }
-.ctrl-bar input[type="month"] {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.1);
+.ctrl-sep { font-size: 16px; color: #4A6080; font-weight: 700; }
+.ctrl-bar select {
+  background: #fff;
+  border: 1px solid #B0BEC8;
   border-radius: 4px;
-  color: #C4D5E8;
+  color: #1B2A4A;
   font-size: 11px;
+  font-weight: 600;
   font-family: inherit;
-  padding: 3px 8px;
-  height: 24px;
+  padding: 3px 6px;
+  height: 26px;
   cursor: pointer;
   outline: none;
 }
-.ctrl-bar input[type="month"]:hover { border-color: rgba(255,255,255,.2); }
-.ctrl-bar input[type="month"]:focus { border-color: #3B82F6; }
+.ctrl-bar select:hover { border-color: #7A90AA; }
+.ctrl-bar select:focus { border-color: #3B82F6; box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
 .ctrl-reset {
-  background: none;
-  border: 1px solid rgba(255,255,255,.1);
+  background: #fff;
+  border: 1px solid #B0BEC8;
   border-radius: 4px;
-  color: #7A90AA;
-  font-size: 10px;
+  color: #2D3F55;
+  font-size: 11px;
+  font-weight: 600;
   font-family: inherit;
-  padding: 2px 8px;
+  padding: 2px 10px;
   cursor: pointer;
-  height: 24px;
+  height: 26px;
 }
-.ctrl-reset:hover { border-color: rgba(255,255,255,.2); color: #C4D5E8; }
+.ctrl-reset:hover { background: #f0f4f8; border-color: #7A90AA; }
 .ctrl-info {
   margin-left: auto;
-  font-size: 10px;
-  color: #3D5070;
+  font-size: 11px;
+  color: #7A90AA;
+  font-weight: 500;
 }
 
 </style>
@@ -472,9 +475,11 @@ body {
 
 <div class="ctrl-bar">
   <span class="ctrl-label">Période</span>
-  <input type="month" id="ctrl-start" value="2026-09" title="Début de la timeline">
+  <select id="ctrl-sm"></select>
+  <select id="ctrl-sy"></select>
   <span class="ctrl-sep">→</span>
-  <input type="month" id="ctrl-end" value="2027-08" title="Fin de la timeline">
+  <select id="ctrl-em"></select>
+  <select id="ctrl-ey"></select>
   <button class="ctrl-reset" onclick="resetPeriod()">Réinitialiser</button>
   <span class="ctrl-info" id="ctrl-info"></span>
 </div>
@@ -567,11 +572,11 @@ function buildTimeline(startYM, endYM) {
 }
 
 function loadPeriod() {
+  buildSelects();
   let s = DEFAULT_START, e = DEFAULT_END;
   try { s = localStorage.getItem('roadmap_start') || DEFAULT_START; } catch(_) {}
   try { e = localStorage.getItem('roadmap_end')   || DEFAULT_END;   } catch(_) {}
-  document.getElementById('ctrl-start').value = s;
-  document.getElementById('ctrl-end').value   = e;
+  setSelValues(s, e);
   buildTimeline(s, e);
 }
 
@@ -580,20 +585,60 @@ function savePeriod(s, e) {
 }
 
 function resetPeriod() {
-  document.getElementById('ctrl-start').value = DEFAULT_START;
-  document.getElementById('ctrl-end').value   = DEFAULT_END;
+  setSelValues(DEFAULT_START, DEFAULT_END);
   buildTimeline(DEFAULT_START, DEFAULT_END);
   savePeriod(DEFAULT_START, DEFAULT_END);
   if (lastRecords) render(lastRecords);
 }
 
-document.getElementById('ctrl-start').addEventListener('change', function() {
-  const s = this.value, e = document.getElementById('ctrl-end').value;
-  if (s && e && s <= e) { buildTimeline(s, e); savePeriod(s, e); if (lastRecords) render(lastRecords); }
-});
-document.getElementById('ctrl-end').addEventListener('change', function() {
-  const s = document.getElementById('ctrl-start').value, e = this.value;
-  if (s && e && s <= e) { buildTimeline(s, e); savePeriod(s, e); if (lastRecords) render(lastRecords); }
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const ANNEES  = [2025, 2026, 2027, 2028, 2029];
+
+function buildSelects() {
+  ['ctrl-sm','ctrl-em'].forEach(id => {
+    const sel = document.getElementById(id);
+    MOIS_FR.forEach((m,i) => {
+      const o = document.createElement('option');
+      o.value = String(i+1).padStart(2,'0');
+      o.textContent = m;
+      sel.appendChild(o);
+    });
+  });
+  ['ctrl-sy','ctrl-ey'].forEach(id => {
+    const sel = document.getElementById(id);
+    ANNEES.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = y;
+      sel.appendChild(o);
+    });
+  });
+}
+
+function getSelValues() {
+  const sm = document.getElementById('ctrl-sm').value;
+  const sy = document.getElementById('ctrl-sy').value;
+  const em = document.getElementById('ctrl-em').value;
+  const ey = document.getElementById('ctrl-ey').value;
+  return { start: sy + '-' + sm, end: ey + '-' + em };
+}
+
+function setSelValues(startYM, endYM) {
+  const [sy,sm] = startYM.split('-');
+  const [ey,em] = endYM.split('-');
+  document.getElementById('ctrl-sm').value = sm;
+  document.getElementById('ctrl-sy').value = sy;
+  document.getElementById('ctrl-em').value = em;
+  document.getElementById('ctrl-ey').value = ey;
+}
+
+function onSelChange() {
+  const { start, end } = getSelValues();
+  if (start <= end) { buildTimeline(start, end); savePeriod(start, end); if (lastRecords) render(lastRecords); }
+}
+
+['ctrl-sm','ctrl-sy','ctrl-em','ctrl-ey'].forEach(id => {
+  document.getElementById(id).addEventListener('change', onSelChange);
 });
 
 let lastRecords = null;
@@ -647,7 +692,7 @@ function parseDate(s) {
 }
 function fmtDate(d) {
   if (!d) return '—';
-  return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' });
 }
 function toPct(d) {
   if (!d) return null;
