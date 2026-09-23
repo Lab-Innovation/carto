@@ -324,9 +324,10 @@ body {
   white-space: nowrap;
 }
 
-/* Narrow cards — masquer description/tags, GARDER titre + statut + porteurs */
+/* Narrow cards — masquer description/tags ET dates, GARDER titre + statut + porteurs */
 .card.narrow .card-row2  { display: none; }
-/* Tiny cards — masquer aussi les dates dans row3 */
+.card.narrow .card-dates { display: none; }
+/* Tiny cards — idem */
 .card.tiny   .card-row2  { display: none; }
 .card.tiny   .card-dates { display: none; }
 /* Micro cards (< 50px) — juste le titre tronqué */
